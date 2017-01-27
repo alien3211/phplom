@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% load post_tags %}
+{% load crispy_forms_tags %}
+{% block title %}Post: {{ post.title }}{% endblock %}
+{% block content %}
+<div class="col-md-9">
+    <header class="post-title">
+        {% if post.status == 'draft' %}
+            <h1 style="color: darkred">Wersja robocza</h1>
+        {% endif %}
+        <h1 style="display: inline-block">{{ post.title }}</h1>
+        {% if request.user == post.author %}
+            <a href="{{ post.get_absolute_url }}edit" class="more-link" style="float: right; margin: 2em 0 0 0">Edit »</a>
+        {% endif %}
+    </header>
+    <p class="tags">
+        Tagi: {% tags_to_html_link post.tags %}
+    </p>
+    <p class="category">
+        Category: {% categories_to_html_link post.category %}
+    </p>
+    <p class="category">
+        Czas czytania: ~{{ post.read_time }} min
+    </p>
+    <div class="post-meta">
+        Opublikowany {{ post.publish }} by {{ post.author }}
+        {% if post.updated > post.timestamp %}
+            <small><span class="post-updated">Aktualizacja: {{ post.updated|date:'d N Y H:i' }}</span></small>
+        {% endif %}
+    </div>
+    <article>
+        <div class="post-content">
+            {{ post.content| markdown2 | safe }}
+        </div>
+    </article>
+<!-- form to above author link to search all posts by author -->
+    <form action="{% url 'posts:search' %}" id="author-form">
+        <input type="hidden" name="query" value="{{ post.author }}">
+        <input type="hidden" name="search_radio" value="author">
+    </form>
+<!-- end form -->
+    <div>
+        <p class="lead">Comments</p>
+        {% if request.user.is_authenticated %}
+            <form method="POST" action=".">
+                {% csrf_token %}
+                {{ comment_form|crispy }}
+                <input type="submit" value="Post comment" class="btn btn-default">
+            </form>
+        {% else %}
+            <p>You must login to comment</p>
+            <hr/>
+        {% endif %}
+        <hr />
+        {% for comment in  comments %}
+            <blockquote>
+                <p>{{ comment.content }}</p>
+                <footer>via {{ comment.user }} | {{ comment.timestamp|timesince }} ago | {% if comment.children.count > 0 %}{{ comment.children.count }} Comments | {% endif %} <a class="commit-reply-btn" href="#">Reply</a> | <a href="{{ comment.get_absolute_url }}">Thread</a></footer>
+                <div class="comment-replay">
+                    {% for child_comment in comment.children %}
+                        <blockquote>
+                            <p>{{ child_comment.content }}</p>
+                            <footer>via {{ child_comment.user }} | {{ child_comment.timestamp|timesince }} ago</footer>
+                        </blockquote>
+                    {% endfor %}
+                    {% if request.user.is_authenticated %}
+                        <form method="POST" action=".">
+                            {% csrf_token %}
+                            {{ comment_form|crispy }}
+                            <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                            <input type="submit" value="Reply" class="btn btn-default">
+                        </form>
+                    {% else %}
+                        <p>You must login to comment</p>
+                        <hr/>
+                    {% endif %}
+                </div>
+            </blockquote>
+            <hr />
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+{% block display-left-column %}
+
+{% endblock display-left-column %}
+{% block display-right-column %}
+    <div class="col-md-3">
+    <div class="panel-posts">
+                        <div class="sidebar-module sidebar-module-inset">
+                            <div class="panel-posts-title">
+                                <h3>Najnowsze posty</h3>
+                            </div>
+                            <div class="panel-posts-body">
+                                {% show_latest_posts 5 %}
+                            </div>
+                        </div>
+                    </div>
+        <div class="recent-posts">
+            <div class="sidebar-module sidebar-module-inset">
+                <div class="panel-posts-title">
+                    <h3>Podobne posty</h3>
+                </div>
+                <div class="panel-posts-body">
+                    <ol class="list-unstyled">
+                        {% for post in similar_posts %}
+                            <li class="latest-post">
+                                <div>
+                                    <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+                                </div>
+                            </li>
+                        {% empty %}
+                            Nie ma podobnych postow.
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock display-right-column %}

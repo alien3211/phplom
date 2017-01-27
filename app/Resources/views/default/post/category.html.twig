@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Category: {{ category }} {% endblock %}
+{% block content %}
+<div class="col-md-6">
+    <h2 class="page-title">Lista postow w kategorii <span style="color: #4cae4c">"{{ category }}"</span></h2>
+    <hr/>
+    {% for post in posts %}
+        {% include 'post/short_post.html' %}
+    {% endfor %}
+    {% include "pagination.html" %}
+</div>
+{% endblock content %}
